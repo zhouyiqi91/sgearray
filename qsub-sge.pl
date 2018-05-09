@@ -1,4 +1,4 @@
-#!/PUBLIC/software/public/System/Perl-5.18.2/bin/perl 
+#! /usr/bin/env perl 
 
 =head1 Name
 
@@ -6,71 +6,12 @@ qsub-sge.pl -- control processes running on linux SGE system
 
 =head1 Description
 
-This program throw the jobs and control them running on linux SGE system. It reads jobs
-from an input shell file. One line is the smallest unit of  a single job, however, you can also specify the
-number of lines to form a single job. For sequential commands, you'd better put them
-onto a single line, seperated by semicolon. In anywhere, "&" will be removed
-automatically. The program will terminate when all its jobs are perfectly finished.
-
-If you have so many jobs, the efficency depends on how many CPUs you can get,
-or which queque you have chosen by --queue option. You can use the --maxjob option to
-limit the number of throwing jobs, in order to leave some CPUs for other people.
-When each job consumes long time, you can use the --interval option to increase interval
-time for qstat checking , in order to reduce the burden of the head node.
-
-As SGE can only recognize absolute path, so you'd better use absolute path everywhere,
-we have developed several ways to deal with path problems:
-(1) We have added a function that converting local path to absolute
-path automatically. If you like writting absolute path by yourself, then you'd better close this
-function by setting "--convert no" option.
-(2) Note that for local path, you'd better write
-"./me.txt" instead of only "me.txt", because "/" is the  key mark to distinguish path with
-other parameters.
-(3) If an existed file "me.txt" is put in front of the redirect character ">",
-or an un-created file "out.txt" after the redirect character ">",
-the program will add a path "./" to the file automatically. This will avoid much
-of the problems which caused by forgetting to write "./" before file name.
-However, I still advise you to write "./me.txt" instead of just "me.txt", this is a good habit.
-(4) Please also note that for the re-direct character ">" and "2>", there must be space characters
-both at before and after, this is another good habit.
-
-There are several mechanisms to make sure that all the jobs have been perfectly finished:
-(1) We add an auto job completiton mark "This-Work-is-Completed!" to the end of the job, and check it after the job finished
-(2) We check "GLIBCXX_3.4.9 not found" to make sure that the C/C++ libary on computing nodes are in good state
-(3) We provide a "--secure" option to allow the users define their own job completition mark. You can print a mark
-    (for example, "my job complete") to STDERR at the end of your program, and set --secure "my job complete" at
-	this program. You'd better do this when you are not sure about wheter there is bug in your program.
-(4) We provide a "--reqsub" option, to throw the unfinished jobs automatically, until all the jobs are
-    really finished. By default, this option is closed, please set it forcely when needed. The maximum
-	reqsub cycle number allowed is 1000.
-(5) Add a function to detect the died computing nodes automatically.
-(6) Add checking "iprscan: failed" for iprscan
-(7) Add a function to detect queue status, only "r", "t", and "qw" is considered correct.
-(8) Add check "failed receiving gdi request"
-
-Normally, The result of this program contains 3 parts: (Note that the number 24137 is the process Id of this program)
-(1) work.sh.24137.globle,     store the shell scripts which has been converted to global path
-(2) work.sh.24137.qsub,       store the middle works, such as job script, job STOUT result, and job STDERR result
-(3) work.sh.24137.log,      store the error job list, which has been throwed more than one times.
-
-I advice you to always use the --reqsub option and check the .log file after this program is finished. If you find "All jobs finished!", then
-then all the jobs have been completed. The other records are the job list failed in each throwing cycle, but
-don't worry, they are also completed if you have used --reqsub option.
-
-For the resource requirement, by default, the --resource option is set to vf=1.9G, which means the total
-memory restriction of one job is 1.9G. By this way, you can throw 8 jobs in one computing node, because the
-total memory restriction of one computing node is 15.5G. If your job exceeds the maximum memory allowed,
-then it will be killed forcely. For large jobs, you must specify the --resource option manually, which
-has the same format with "qsub -l" option. If you have many small jobs, and want them to run faster, you
-also need to specify a smaller memory requirement, then more jobs will be run at the same time. The key
-point is that, you should always consider the memory usage of your program, in order to improve the efficency
-of the whole cluster.
-
 =head1 Version
 
   Author: Fan Wei, fanw@genomics.org.cn
-  Autor: Hu Yujie  huyj@genomics.org.cn
-  Version: 8.2,  Date: 2009-11-11
+  Author: Hu Yujie  huyj@genomics.org.cn
+  modified:Zhou yiqi
+  Version: 1.0,  Date: 2018-05-09
 
 =head1 Usage
 
@@ -93,31 +34,7 @@ of the whole cluster.
 
 =head1 Exmple
 
-  1.work with default options (the most simplest way)
-  perl qsub-sge.pl ./work.sh
-
-  2.work with user specifed options: (to select queue, set checking interval time, set number of lines in each job, and set number of maxmimun running jobs)
-  perl qsub-sge.pl --queue all.q -interval 1 -lines 3 -maxjob 10  ./work.sh
-
-  3.do not convert path because it is already absolute path (Note that errors may happen when convert local path to absolute path automatically)
-  perl qsub-sge.pl --convert no ./work.sh
-
-  4.add user defined job completion mark (this can make sure that your program has executed to its last sentence)
-  perl qsub-sge.pl -inter 1  -secure "my job finish" ./work.sh
-
-  5.reqsub the unfinished jobs until all jobs are really completed (the maximum allowed reqsub cycle is 10000)
-  perl qsub-sge.pl --reqsub ./work.sh
-
-  6.work with user defined memory usage
-  perl qsub-sge.pl --resource vf=1.9G ./work.sh
-
-  7.recommend combination of usages for common applications (I think this will suit for 99% of all your work)
-  perl qsub-sge.pl --queue all.q --resource vf=1.9G -maxjob 10 --reqsub ./work.sh
-
-  8.resources can be defined for complex condition:
-  resources for different steps split by ',' and different resources for each step split by ':';
-  eg: perl qsub-sge.pl --resource vf=1G:p=2,vf=16G:p=1 work.sh --lines 2
-  would qsub as : qsub -l vf=1G -l p=2 <Line1>; then qsub -l vf=16G -l p=1 <Line2>
+	perl qsub-sge.pl -l vf=1G,p=1 -P aliyun -q alyun.q --lines 2 --maxjob 100 --check 20 run.sh
 
 =cut
 
