@@ -15,7 +15,7 @@ optional arguments:
   -q QUEUE              queue(s),equal to -q in qsub
   -P PROJECT            project name,equal to -P in qsub
   -m MAXJOB, --maxjob MAXJOB
-                        maximum number of job run simultaneously.(default=300)
+  maximum number of job run simultaneously.(default=300)
   -c CUT, --cut CUT     number of lines to form a job in
                         input_file.(default=1)
   -n NAME, --name NAME  job name. if not set, use input_file prefix plus two
