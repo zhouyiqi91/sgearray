@@ -221,7 +221,7 @@ def main():
 			all_log.write(str(failed)+" ")
 	all_log.write("="*50+"\n")
 
-	all_log.write("\tcpu(h)\tio\tvmem\tmaxvmem\n")
+	all_log.write("\tcpu(h)\tio\tvmem(G)\tmaxvmem(G)\n")
 	item_list = ['max','max_id','min','min_id','mean','total']
 	for i in range(6):
 		all_log.write(item_list[i]+"\t"+str(cpu_list[i])+"\t"+str(io_list[i])+"\t"+str(vmem_list[i])+"\t"+str(maxvmem_list[i])+"\n")
