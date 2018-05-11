@@ -9,7 +9,7 @@ Sge array job submit and check. Authour:zhouyiqi
 positional arguments:
   input_file
 
-optional arguments:
+optional arguments:<br>
   -h, --help            show this help message and exit<br>
   -l RESOURCE           equal to -l in qsub.Example: -l vf=1g,p=1<br>
   -q QUEUE              queue(s),equal to -q in qsub<br>
