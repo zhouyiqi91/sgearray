@@ -3,7 +3,7 @@ import argparse
 
 def parse_input():
 
-	parser = argparse.ArgumentParser(description='Sge array job submit and check. \nAuthour:zhouyiqi\nExample usage: sgearray input_file')
+	parser = argparse.ArgumentParser(description='Sge array job submit and check. \nAuthour:zhouyiqi\n')
 	parser.add_argument('-l', required = True, dest = "resource", help = "equal to -l in qsub.Example: -l vf=1g,p=1")
 	parser.add_argument('-q', required = False, dest = "queue", help = "queue(s),equal to -q in qsub")
 	parser.add_argument('-P', required = False, dest = "project",  help = "project name,equal to -P in qsub")
@@ -27,8 +27,11 @@ def cutjob(args,job,name):
 		env = ""
 		for line in jobfile:
 			line = line.strip(" ")
+			line = line.strip("\n")
 			if line[0] == "?":
 				env += line.strip("?")
+			elif line == "":
+				pass
 			else:
 				index += 1
 				if index == 1:
