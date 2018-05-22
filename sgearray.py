@@ -10,7 +10,7 @@ def parse_input():
 	#parser.add_argument('-f', '--filelimit', required = False, dest = "filelimit", default = "500G", help = "The largest file a command can create without being killed. (Preserves fileservers.) Default: 500G")
 	parser.add_argument('-m', '--maxjob', required = False, dest = "maxjob", default = "300", help = "maximum number of job run simultaneously.(default=300)")
 	parser.add_argument('-c', '--cut', required = False, dest = "cut",default = "1", help = "number of lines to form a job in input_file.(default=1)")
-	parser.add_argument('-n', '--name',required = False,dest = "name", help= "job name. if not set, use input_file prefix plus two random characters")
+	parser.add_argument('-n', '--name',required = False,dest = "name", default = None, help= "job name. if not set, use input_file prefix plus two random characters")
 	parser.add_argument('-v', '--version', action = 'version', version = '%(prog)s 1.0')
 	parser.add_argument('input_file',action="store",type=str)
 	args = parser.parse_args()
@@ -166,10 +166,10 @@ def main():
 	import time
 	import random
 	(args,job) = parse_input()
-	if args.name:
+	if args.name != None:
 		name = args.name
 	else:
-		name = job.split(".")[0] + chr(random.randint(97,123)) + chr(random.randint(97,123))
+		name = os.path.basename(job).split(".")[0] + chr(random.randint(97,123)) + chr(random.randint(97,123))
 	log_dir=name+".log"
 	try:
 		os.system("mkdir "+log_dir)
