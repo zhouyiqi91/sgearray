@@ -147,7 +147,7 @@ def summarize(name,job_number):
 		vmem_dic[key] = vmem_ingb
 
 		if maxvmem[-1] == "M":
-			max_vmem_ingb = float(maxvmem.strip("M"))/1024
+			maxvmem_ingb = float(maxvmem.strip("M"))/1024
 		elif maxvmem[-1] == "G":
 			maxvmem_ingb = float(maxvmem.strip("G"))
 		else:
