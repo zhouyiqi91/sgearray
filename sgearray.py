@@ -28,10 +28,10 @@ def cutjob(args,job,name):
 		for line in jobfile:
 			line = line.strip(" ")
 			line = line.strip("\n")
+			if line == "":
+				continue
 			if line[0] == "?":
 				env += line.strip("?")
-			elif line == "":
-				pass
 			else:
 				index += 1
 				if index == 1:
@@ -42,7 +42,7 @@ def cutjob(args,job,name):
 				if index != 1:
 					split_job.write(line)
 				if index == lines:
-					split_job.write('echo "Job-Exit-Code:"$? >&2\n')
+					split_job.write('\necho "Job-Exit-Code:"$? >&2\n')
 					split_job.write('echo "This-Job-Is-Completed!" >&2\n')
 					split_job.write('''qstat -xml |grep -B 5 '''+ name +\
 '''|grep "<JB_job_number>.*</JB_job_number>"|\
@@ -141,6 +141,8 @@ def summarize(name,job_number):
 			vmem_ingb = float(vmem.strip("M"))/1024
 		elif vmem[-1] == "G":
 			vmem_ingb = float(vmem.strip("G"))
+		else:
+			vmem_ingb = 0.0
 		vmem_ingb = round(vmem_ingb,3)
 		vmem_dic[key] = vmem_ingb
 
@@ -148,6 +150,8 @@ def summarize(name,job_number):
 			max_vmem_ingb = float(maxvmem.strip("M"))/1024
 		elif maxvmem[-1] == "G":
 			maxvmem_ingb = float(maxvmem.strip("G"))
+		else:
+			maxvmem_ingb = 0.0
 		maxvmem_ingb = round(maxvmem_ingb,3)
 		maxvmem_dic[key] = maxvmem_ingb
 	
