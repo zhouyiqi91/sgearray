@@ -69,7 +69,7 @@ def write_qsub(args,name,job_number):
 def write_submit(name,env):
     submit_sh = name+ "_all.sh"
     with open(submit_sh,'w') as submit:
-		submit.write(env)
+		submit.write(env+"\n")
 		submit.write("jobid=$SGE_TASK_ID\n")
 		submit.write("sh "+name+"_${jobid}.sh\n")
 
