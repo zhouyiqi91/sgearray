@@ -1,5 +1,6 @@
 #! /usr/bin/env python
 import argparse
+import os 
 
 def parse_input():
 
@@ -19,11 +20,12 @@ def parse_input():
 	return args,job
 
 def cutjob(args,job,name):
-    #name = args.name
-    lines=int(args.cut)
-    job_number = 0
-    index = 0
-    with open(job) as jobfile:
+
+	abs_path = os.getcwd()
+	lines=int(args.cut)
+	job_number = 0
+	index = 0
+	with open(job) as jobfile:
 		env = ""
 		for line in jobfile:
 			line = line.strip(" ")
@@ -38,19 +40,19 @@ def cutjob(args,job,name):
 					job_number += 1
 					split_job_name = name+"_"+str(job_number)+".sh"
 					split_job = open(split_job_name,'w')
-					split_job.write(line)
+					split_job.write(line+"\n")
 				if index != 1:
-					split_job.write(line)
+					split_job.write(line+"\n")
 				if index == lines:
 					split_job.write('\necho "Job-Exit-Code:"$? >&2\n')
 					split_job.write('echo "This-Job-Is-Completed!" >&2\n')
 					split_job.write('''qstat -xml |grep -B 5 '''+ name +\
 '''|grep "<JB_job_number>.*</JB_job_number>"|\
 grep -o "[0-9]*"|xargs qstat -j|grep "usage *'''+str(job_number)+''':" >&2\n''')
-					split_job.write('mv $0 ./'+name+'.log/shell')
+					split_job.write('mv '+abs_path+'/$0 '+abs_path+'/'+name+'.log/shell \n')
 					split_job.close()
 					index = 0
-    return job_number,env
+	return job_number,env
 
 def write_qsub(args,name,job_number):
     submit_sh = name+ "_all.sh"
@@ -162,14 +164,13 @@ def summarize(name,job_number):
 	return non_zero,non_zero_list,cpu_list,io_list,vmem_list,maxvmem_list
 
 def main():
-	import os
 	import time
 	import random
 	(args,job) = parse_input()
 	if args.name != None:
 		name = args.name
 	else:
-		name = os.path.basename(job).split(".")[0] + chr(random.randint(97,123)) + chr(random.randint(97,123))
+		name = os.path.basename(job).split(".")[0] + chr(random.randint(97,122)) + chr(random.randint(97,122))
 	log_dir=name+".log"
 	try:
 		os.system("mkdir "+log_dir)
@@ -223,12 +224,12 @@ def main():
 		all_log.write("These jobid may be failed:\n")
 		for failed in non_zero_list:
 			all_log.write(str(failed)+" ")
-	all_log.write("="*50+"\n")
+	all_log.write("\n"+"="*50+"\n")
 
-	all_log.write("\tcpu(h)\tio\tvmem(G)\tmaxvmem(G)\n")
+	all_log.write("\t\tcpu(h)\t\tio\t\tvmem(G)\t\tmaxvmem(G)\n")
 	item_list = ['max','max_id','min','min_id','mean','total']
 	for i in range(6):
-		all_log.write(item_list[i]+"\t"+str(cpu_list[i])+"\t"+str(io_list[i])+"\t"+str(vmem_list[i])+"\t"+str(maxvmem_list[i])+"\n")
+		all_log.write(item_list[i]+"\t\t"+str(cpu_list[i])+"\t\t"+str(io_list[i])+"\t\t"+str(vmem_list[i])+"\t\t"+str(maxvmem_list[i])+"\n")
 
 	all_log.close()
 
