@@ -2,6 +2,7 @@
 import argparse
 import os 
 
+
 def parse_input():
 
     parser = argparse.ArgumentParser(description='Sge array job submit and check. \nAuthour:zhouyiqi\n')
