@@ -195,7 +195,7 @@ def main():
     os.system(cmd)
 
     #check jobs
-    while True:
+    def check_job(log_dir,name,job_number):
         finished = 0
         for i in range(1,job_number+1):
             try:
@@ -206,9 +206,25 @@ def main():
                 if err.find("This-Job-Is-Completed!") != -1:
                     finished += 1
         if finished == job_number:
+            return True
+        else:
+            return False
+
+
+    while True:
+        if check_job(log_dir,name,job_number):
             break
         else:
-            time.sleep(10)
+            job_status = os.popen("qstat -xml|grep -c "+name).readlines()
+            if int(job_status.strip()) == 0:
+                #wait for 30s and check again
+                sleep(30s)
+                if not check_job(log_dir,name,job_number):
+                    print ("no "+name+" job found in cluster! Maybe qdel,sgearray will exit with -1 status")
+                    sys.exit(-1)
+                else:
+                    break
+            time.sleep(60)
 
 
     #Finish 
@@ -234,6 +250,7 @@ def main():
 
     all_log.close()
     if non_zero != 0:
+        print ("sgearray exit with 1 status")
         sys.exit(1)
     else:
         sys.exit(0)
