@@ -215,7 +215,7 @@ def main():
         if check_job(log_dir,name,job_number):
             break
         else:
-            job_status = os.popen("qstat -xml|grep -c "+name).readlines()
+            job_status = os.popen("qstat -xml|grep -c "+name).readlines()[0]
             if int(job_status.strip()) == 0:
                 #wait for 30s and check again
                 sleep(30)
