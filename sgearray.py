@@ -34,7 +34,7 @@ def cutjob(args,job,name):
             if line == "":
                 continue
             if line[0] == "?":
-                env += line.strip("?")
+                env += line.strip("?") + "\n"
             else:
                 index += 1
                 if index == 1:
