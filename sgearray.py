@@ -47,9 +47,7 @@ def cutjob(args,job,name):
                 if index == lines:
                     split_job.write('\necho "Job-Exit-Code:"$? >&2\n')
                     split_job.write('echo "This-Job-Is-Completed!" >&2\n')
-                    split_job.write('''qstat -xml |grep -B 5 '''+ name +\
-'''|grep "<JB_job_number>.*</JB_job_number>"|\
-grep -o "[0-9]*"|xargs qstat -j|grep "usage *'''+str(job_number)+''':" >&2\n''')
+                    split_job.write('''qstat -j '''+ name +'''_all.sh|grep "usage *'''+str(job_number)+''':" >&2\n''')
                     split_job.write('mv '+abs_path+'/$0 '+abs_path+'/'+name+'.log/shell \n')
                     split_job.close()
                     index = 0
