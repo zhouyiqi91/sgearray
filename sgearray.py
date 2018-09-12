@@ -216,7 +216,7 @@ def main():
             job_status = os.popen("qstat -xml|grep -c "+name).readlines()[0]
             if int(job_status.strip()) == 0:
                 #wait for 30s and check again
-                sleep(30)
+                time.sleep(30)
                 if not check_job(log_dir,name,job_number):
                     print ("no "+name+" job found in cluster! Maybe qdel,sgearray will exit with -1 status")
                     sys.exit(-1)
