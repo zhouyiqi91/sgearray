@@ -51,6 +51,12 @@ def cutjob(args,job,name):
                     split_job.write('mv '+abs_path+'/$0 '+abs_path+'/'+name+'.log/shell \n')
                     split_job.close()
                     index = 0
+        if index != 0:
+            split_job.write('\necho "Job-Exit-Code:"$? >&2\n')
+            split_job.write('echo "This-Job-Is-Completed!" >&2\n')
+            split_job.write('''qstat -j '''+ name +'''_all.sh|grep "usage *'''+str(job_number)+''':" >&2\n''')
+            split_job.write('mv '+abs_path+'/$0 '+abs_path+'/'+name+'.log/shell \n')
+            split_job.close()
     return job_number,env
 
 def write_qsub(args,name,job_number):
