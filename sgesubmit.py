@@ -82,10 +82,6 @@ def write_qsub(args, name, index):
     return cmd
 
 
-def write_submit(name, env):
-    pass
-
-
 def getlist():
     pass
 
@@ -113,6 +109,23 @@ def main():
         os.mkdir(log_dir + '/shell')
     except:
         print("Can not make shell dir.Mayby exist.")
+
+    # start
+    all_log = open(name + "_all.log", 'w')
+    all_log.write(''.join(['Start at: ', time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), '\n']))
+    # submit
+    for cmd in cmd_list:
+        all_log.write("Submit command: " + cmd + "\n")
+        try:
+            subprocess.check_output(cmd, shell=True)
+        except subprocess.CalledProcessError:
+            print('{0} cannot excute'.format(cmd))
+            sys.exit(-1)
+        except:
+            print('Other unclassified error')
+            sys.exit(-1)
+
+    # check jobs
 
 
 if __name__ == '__main__':
