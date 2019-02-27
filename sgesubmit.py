@@ -1,11 +1,10 @@
 #! /usr/bin/env python
 import argparse
 import os
-import sys
 import subprocess
+import sys
 import time
 from random import choice
-import re
 
 try:
     from string import ascii_letters as letters
@@ -72,8 +71,8 @@ mv {2}/$0 {2}/{1}.log/shell
 
 
 def write_qsub(args, name, index):
-    submit_sh = ''.join([name, '_', str(index + 1), '.sh'])
-    opts = '-o ./{0}.log/{0}_{1}.out -e ./{0}.log/{0}_{1}.err'.format(name, index + 1)
+    submit_sh = ''.join([name, '_', str(index), '.sh'])
+    opts = '-o ./{0}.log/{0}_{1}.out -e ./{0}.log/{0}_{1}.err'.format(name, index)
     if args.project:
         opts += ' '.join(['-P', args.project])
     if args.queue:
@@ -82,12 +81,110 @@ def write_qsub(args, name, index):
     return cmd
 
 
-def getlist():
-    pass
+def check_job(log_dir, name, job_number):
+    finished = 0
+    for i in range(1, job_number + 1):
+        try:
+            err = open(''.join([log_dir, '/', name, '_', str(i), '.err'])).read()
+        except:
+            break
+        else:
+            if err.find("This-Job-Is-Completed!") != -1:
+                finished += 1
+    if finished == job_number:
+        return True
+    else:
+        return False
 
 
-def summarize():
-    pass
+def getlist(dic, job_number):
+    # initial
+    maxv = 0.0
+    minv = float("inf")
+    maxid = 1
+    minid = 1
+    total = 0
+    for key in dic:
+        if dic[key] > maxv:
+            maxv = dic[key]
+            maxid = key
+        if dic[key] < minv:
+            minv = dic[key]
+            minid = key
+        total += dic[key]
+    average = round(total / job_number, 3)
+    v_list = [maxv, maxid, minv, minid, average, total]
+    return v_list
+
+
+def summarize(name, job_number):
+    log_dir = ''.join([name, '.log'])
+    use_dic = {}
+    exit_code = {}
+    cpu_dic = {}
+    io_dic = {}
+    vmem_dic = {}
+    maxvmem_dic = {}
+    non_zero = 0
+    non_zero_list = []
+    for i in range(1, job_number + 1):
+
+        with open(''.join([log_dir, '/', name, '_', str(i), '.err'])) as err:
+            for line in err:
+                if line.find("maxvmem") != -1 and line.find("usage") != -1:
+                    use_dic[i] = line
+                if line.find("Job-Exit-Code:") != -1:
+                    exit_code[i] = line.split(":")[1].strip("\n")
+    for key in exit_code:
+        if exit_code[key] != "0":
+            non_zero += 1
+            non_zero_list.append(key)
+    for key in use_dic:
+        attr = use_dic[key].strip("\n").split(",")
+        cpu = attr[0].split("=")[1]
+        mem = attr[1].split("=")[1]
+        io = attr[2].split("=")[1]
+        vmem = attr[3].split("=")[1]
+        maxvmem = attr[4].split("=")[1]
+        # cpu
+        cpu_attr = cpu.split(":")
+        cpu_len = len(cpu_attr)
+        cpu_int = [int(i) for i in cpu_attr]
+
+        if cpu_len == 3:
+            cpu_insec = cpu_int[2] + cpu_int[1] * 60 + cpu_int[0] * 3600
+        elif cpu_len == 4:
+            cpu_insec = cpu_int[3] + cpu_int[2] * 60 + cpu_int[1] * 3600 + cpu_int[0] * 3600 * 24
+
+        cpu_inhour = round(cpu_insec / float(3600), 3)
+        cpu_dic[key] = cpu_inhour
+        # io
+        io_float = round(float(io), 3)
+        io_dic[key] = io_float
+        # vmem
+        if vmem[-1] == "M":
+            vmem_ingb = float(vmem.strip("M")) / 1024
+        elif vmem[-1] == "G":
+            vmem_ingb = float(vmem.strip("G"))
+        else:
+            vmem_ingb = 0.0
+        vmem_ingb = round(vmem_ingb, 3)
+        vmem_dic[key] = vmem_ingb
+
+        if maxvmem[-1] == "M":
+            maxvmem_ingb = float(maxvmem.strip("M")) / 1024
+        elif maxvmem[-1] == "G":
+            maxvmem_ingb = float(maxvmem.strip("G"))
+        else:
+            maxvmem_ingb = 0.0
+        maxvmem_ingb = round(maxvmem_ingb, 3)
+        maxvmem_dic[key] = maxvmem_ingb
+
+    cpu_list = getlist(cpu_dic, job_number)
+    io_list = getlist(io_dic, job_number)
+    vmem_list = getlist(vmem_dic, job_number)
+    maxvmem_list = getlist(maxvmem_dic, job_number)
+    return non_zero, non_zero_list, cpu_list, io_list, vmem_list, maxvmem_list
 
 
 def main():
@@ -104,7 +201,7 @@ def main():
         os.mkdir(''.join([name, '.log']), mode=0o777)
     job_number, env = cutjob(args, job, name)
     # prepare cmd
-    cmd_list = [write_qsub(args, name, i) for i in range(job_number)]
+    cmd_list = [write_qsub(args, name, i) for i in range(1, job_number + 1)]
     try:
         os.mkdir(log_dir + '/shell')
     except:
@@ -126,6 +223,43 @@ def main():
             sys.exit(-1)
 
     # check jobs
+    while True:
+        if check_job(log_dir, name, job_number):
+            break
+        else:
+            job_status = os.popen("qstat -xml|grep -c " + name).readlines()[0]
+            if int(job_status.strip()) == 0:
+                # wait for 30s and check again
+                time.sleep(30)
+                if not check_job(log_dir, name, job_number):
+                    print("no " + name + " job found in cluster! Maybe qdel,sgearray will exit with -1 status")
+                    sys.exit(-1)
+                else:
+                    break
+            time.sleep(60)
+
+    # Finish
+    all_log.write(''.join(['Finish at: ', time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), '\n']))
+    all_log.write(''.join(['=' * 50, '\n']))
+
+    # summary
+    (non_zero, non_zero_list, cpu_list, io_list, vmem_list, maxvmem_list) = summarize(name, job_number)
+    all_log.write(''.join([str(non_zero), ' jobs have non-zero exit status.\n']))
+    if non_zero != 0:
+        all_log.write("These jobid may be failed:\n")
+        for failed in non_zero_list:
+            all_log.write(str(failed) + " ")
+    all_log.write(''.join(['\n' * 5, 50]))
+    all_log.write("\t\tcpu(h)\t\tio\t\tvmem(G)\t\tmaxvmem(G)\n")
+    item_list = ['max', 'max_id', 'min', 'min_id', 'mean', 'total']
+    for i in range(6):
+        all_log.write(item_list[i] + "\t\t" + str(cpu_list[i]) + "\t\t" + str(io_list[i]) + "\t\t" + str(vmem_list[i]) + "\t\t" + str(maxvmem_list[i]) + "\n")
+    all_log.close()
+    if non_zero != 0:
+        print("sgearray exit with 1 status")
+        sys.exit(1)
+    else:
+        sys.exit(0)
 
 
 if __name__ == '__main__':
