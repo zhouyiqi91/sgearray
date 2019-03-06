@@ -80,9 +80,9 @@ def write_qsub(args, name, index):
     submit_sh = ''.join([name, '_', str(index), '.sh'])
     opts = '-o ./{0}.log/{0}_{1}.out -e ./{0}.log/{0}_{1}.err'.format(name, index)
     if args.project:
-        opts += ' '.join(['-P', args.project])
+        opts += ' '.join([' -P', args.project])
     if args.queue:
-        opts += ' '.join(['-q', args.queue])
+        opts += ' '.join([' -q', args.queue])
     cmd = 'qsub -cwd -V -l {0} {2} -N {1} {1}'.format(args.resource, submit_sh, opts)
     return cmd
 
