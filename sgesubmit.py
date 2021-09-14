@@ -46,32 +46,32 @@ def cutjob(args, job, name):
             if line == '':
                 continue
             if line[0] == '?':
-                env += ''.join([line.strip('?'), '\n'])
+                env += ''.join([line.strip('?')])
             else:
                 index += 1
                 if index == 1:
                     job_number += 1
                     split_job_name = ''.join([name, '_', str(job_number), '.sh'])
                     split_job = open(split_job_name, 'w')
-                    split_job.write(''.join([env, '\n', line, '\n']))
-                if index != 1:
-                    split_job.write(line + '\n')
-                if index == lines:
-                    split_job.write('''
-echo 'Job-Exit-Code:'$? >&2
-echo 'This-Job-Is-Completed!' >&2
-qstat -j {0} | grep usage >&2
-mv {2}/{0} {2}/{1}.log/shell/
+                    split_job.write(''.join([env, '\n']))
+                    split_job.write('''set -o pipefail
+function get_exit_code {{
+    echo 'Job-Exit-Code:'$? >&2
+    echo 'This-Job-Is-Completed!' >&2
+    qstat -j {0} | grep usage >&2
+    mv {2}/{0} {2}/{1}.log/shell/
+    exit 0
+}}
 '''.format(split_job_name, name, abs_path))
+                    split_job.write(''.join(['( ', line, ' )', ' || ', 'get_exit_code', '\n']))
+                if index != 1:
+                    split_job.write(''.join(['( ', line, ' )', ' || ', 'get_exit_code', '\n']))
+                if index == lines:
+                    split_job.write(''.join(['get_exit_code', '\n']))
                     split_job.close()
                     index = 0
         if index != 0:
-            split_job.write('''
-echo 'Job-Exit-Code:'$? >&2
-echo 'This-Job-Is-Completed!' >&2
-qstat -j {0} | grep usage >&2
-mv {2}/{0} {2}/{1}.log/shell/
-'''.format(split_job_name, name, abs_path))
+            split_job.write(''.join(['get_exit_code', '\n']))
             split_job.close()
     return job_number, env
 
@@ -80,9 +80,9 @@ def write_qsub(args, name, index):
     submit_sh = ''.join([name, '_', str(index), '.sh'])
     opts = '-o ./{0}.log/{0}_{1}.out -e ./{0}.log/{0}_{1}.err'.format(name, index)
     if args.project:
-        opts += ' '.join(['-P', args.project])
+        opts += ' '.join([' -P', args.project])
     if args.queue:
-        opts += ' '.join(['-q', args.queue])
+        opts += ' '.join([' -q', args.queue])
     cmd = 'qsub -cwd -V -l {0} {2} -N {1} {1}'.format(args.resource, submit_sh, opts)
     return cmd
 
@@ -190,6 +190,7 @@ def main():
         name = args.name
     else:
         name = ''.join([os.path.basename(job).split('.')[0], choice(letters), choice(letters), choice(letters)])
+    os.chdir(os.path.abspath(os.path.dirname(job)))
     log_dir = ''.join([name, '.log'])
     while True:
         if os.path.exists(''.join([name, '.log'])):
@@ -247,6 +248,9 @@ def main():
         all_log.write('These jobid may be failed:\n')
         for failed in non_zero_list:
             all_log.write(str(failed) + ' ')
+    else:
+        with open('_'.join([os.path.basename(job), 'done']), 'w') as f:
+            f.write('Done')
     all_log.write(''.join(['\n', '=' * 50, '\n']))
     all_log.write('\t\tcpu(h)\t\tio\t\tvmem(G)\t\tmaxvmem(G)\n')
     item_list = ['max', 'max_id', 'min', 'min_id', 'mean', 'total']
